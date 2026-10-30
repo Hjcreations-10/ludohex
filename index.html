@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ludo Hex Star Edition - 3D Hexagonal Arena</title>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -24,16 +25,8 @@
       overflow-x: hidden;
     }
 
-    /* Hexagonal Clip Path Utilities */
-    .hex-shape {
-      clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
-    }
-    .hex-card {
-      clip-path: polygon(5% 0, 95% 0, 100% 50%, 95% 100%, 5% 100%, 0 50%);
-    }
-
-    /* Modal Setup & Event Overlay */
-    #setup-modal, #event-modal {
+    /* Modal Setup, Victory & Event Overlays */
+    #setup-modal, #event-modal, #victory-modal {
       position: fixed;
       top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(2, 6, 23, 0.92);
@@ -43,7 +36,7 @@
       z-index: 100;
       backdrop-filter: blur(8px);
     }
-    #event-modal {
+    #event-modal, #victory-modal {
       z-index: 150;
       display: none;
     }
@@ -55,7 +48,7 @@
       padding: 28px 36px;
       text-align: center;
       box-shadow: 0 0 45px rgba(56, 189, 248, 0.3);
-      max-width: 440px;
+      max-width: 460px;
       width: 92%;
       animation: hexPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       position: relative;
@@ -68,7 +61,7 @@
 
     .modal-card h2 {
       color: #38bdf8;
-      font-size: 2rem;
+      font-size: 1.8rem;
       margin-bottom: 8px;
       letter-spacing: 1.5px;
       text-transform: uppercase;
@@ -77,27 +70,27 @@
     .modal-card p {
       color: #94a3b8;
       font-size: 0.95rem;
-      margin-bottom: 22px;
+      margin-bottom: 20px;
       line-height: 1.5;
     }
 
-    .player-opt-btn, .modal-btn {
+    .player-opt-btn, .modal-btn, .share-btn {
       display: block;
       width: 100%;
-      padding: 14px;
-      margin: 10px 0;
+      padding: 12px;
+      margin: 8px 0;
       border: 1px solid #38bdf8;
       border-radius: 12px;
       background: rgba(30, 41, 59, 0.9);
       color: white;
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.25s ease;
       text-transform: uppercase;
       letter-spacing: 1px;
     }
-    .player-opt-btn:hover, .modal-btn:hover {
+    .player-opt-btn:hover, .modal-btn:hover, .share-btn:hover {
       background: #0284c7;
       border-color: #7dd3fc;
       transform: translateY(-2px);
@@ -129,6 +122,30 @@
     .event-badge.luck { background: rgba(22, 101, 52, 0.8); color: #4ade80; border: 1px solid #22c55e; }
     .event-badge.risk { background: rgba(153, 27, 27, 0.8); color: #fca5a5; border: 1px solid #ef4444; }
 
+    /* Victory Leaderboard Styling */
+    .leaderboard-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 16px 0;
+      text-align: left;
+    }
+    .rank-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .rank-item.first { border-color: #eab308; background: rgba(234, 179, 8, 0.15); color: #fde047; }
+    .rank-item.second { border-color: #94a3b8; background: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
+    .rank-item.third { border-color: #b45309; background: rgba(180, 83, 9, 0.15); color: #f97316; }
+    .rank-item.loser { border-color: #ef4444; background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+
     /* Header Bar */
     header {
       display: flex;
@@ -143,17 +160,17 @@
       background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
       border: 2px solid #38bdf8;
       border-radius: 30px;
-      padding: 6px 20px;
+      padding: 6px 18px;
       text-align: center;
       box-shadow: 0 4px 20px rgba(0,0,0,0.6), 0 0 15px rgba(56, 189, 248, 0.2);
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
     .app-title-badge h1 {
       color: #38bdf8;
-      font-size: 1.15rem;
-      letter-spacing: 1.5px;
+      font-size: 1.1rem;
+      letter-spacing: 1.2px;
       text-transform: uppercase;
       font-weight: 900;
       text-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
@@ -162,21 +179,23 @@
       background: #1e293b;
       border: 1px solid #334155;
       color: #fff;
-      width: 42px;
+      padding: 0 12px;
       height: 42px;
       border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      font-size: 1.2rem;
+      font-size: 1rem;
+      font-weight: 700;
+      gap: 6px;
       transition: all 0.2s;
       box-shadow: 0 4px 10px rgba(0,0,0,0.4);
     }
     .icon-btn:hover {
       background: #334155;
       border-color: #38bdf8;
-      transform: scale(1.05);
+      transform: scale(1.03);
     }
 
     /* Hex Layout Grid Container */
@@ -213,14 +232,18 @@
       box-shadow: 0 0 22px rgba(56, 189, 248, 0.5);
       transform: translateY(-2px);
     }
+    .player-card.finished {
+      opacity: 0.7;
+      border-color: #eab308;
+    }
     .avatar-hex {
-      width: 40px;
-      height: 40px;
+      width: 38px;
+      height: 38px;
       clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       box-shadow: inset 0 0 8px rgba(0,0,0,0.5);
       flex-shrink: 0;
     }
@@ -236,6 +259,12 @@
     .player-score {
       font-size: 0.75rem;
       color: #94a3b8;
+    }
+    .rank-badge {
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: #eab308;
+      text-transform: uppercase;
     }
 
     .p-red { background: linear-gradient(135deg, rgba(127, 29, 29, 0.8) 0%, rgba(30, 41, 59, 0.9) 100%); }
@@ -281,7 +310,6 @@
       gap: 14px;
     }
 
-    /* Hex Glass Pod for Dice */
     .hex-dice-pod {
       width: 64px;
       height: 64px;
@@ -366,10 +394,7 @@
     .cube-face::after {
       content: '';
       position: absolute;
-      top: 2px;
-      left: 2px;
-      right: 2px;
-      height: 40%;
+      top: 2px; left: 2px; right: 2px; height: 40%;
       background: linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 100%);
       border-radius: 8px 8px 50% 50%;
       pointer-events: none;
@@ -431,6 +456,27 @@
       background: linear-gradient(180deg, #7dd3fc 0%, #0369a1 100%);
       transform: translateY(-1px);
     }
+
+    /* Toast notification */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid #38bdf8;
+      color: #f8fafc;
+      padding: 10px 20px;
+      border-radius: 25px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 200;
+    }
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
   </style>
 </head>
 <body>
@@ -439,10 +485,11 @@
   <div id="setup-modal">
     <div class="modal-card">
       <h2>⬡ LUDO HEX ARENA ⬡</h2>
-      <p>Select player count to start the 3D Hexagonal match:</p>
+      <p>Select match format or join via shared room link:</p>
       <button class="player-opt-btn" onclick="startGame(2)">2 Players (Red vs Yellow)</button>
       <button class="player-opt-btn" onclick="startGame(3)">3 Players (Red, Green, Yellow)</button>
       <button class="player-opt-btn" onclick="startGame(4)">4 Players (Full Hex Battle)</button>
+      <button class="share-btn" onclick="inviteOnlineFriend()" style="margin-top: 14px; background: #0284c7;">🔗 Host Online Lobby</button>
     </div>
   </div>
 
@@ -456,6 +503,20 @@
     </div>
   </div>
 
+  <!-- Modal for Final Rankings & Winner Leaderboard -->
+  <div id="victory-modal">
+    <div class="modal-card" style="border-color: #eab308; box-shadow: 0 0 50px rgba(234, 179, 8, 0.4);">
+      <h2 style="color: #fde047; text-shadow: 0 0 12px rgba(234, 179, 8, 0.6);">👑 MATCH FINISHED 👑</h2>
+      <p style="color: #cbd5e1; margin-bottom: 12px;">Final Player Leaderboard Rankings:</p>
+      
+      <div class="leaderboard-list" id="leaderboard-list">
+        <!-- Dynamic Rankings populated here -->
+      </div>
+
+      <button class="modal-btn" onclick="resetMatch()" style="background: linear-gradient(180deg, #eab308 0%, #ca8a04 100%); border-color: #fde047;">PLAY AGAIN</button>
+    </div>
+  </div>
+
   <!-- Header Bar -->
   <header>
     <button class="icon-btn" onclick="showSetup()">⚙️</button>
@@ -464,7 +525,7 @@
       <h1>Ludo Hex Arena</h1>
       <span>⬡</span>
     </div>
-    <button class="icon-btn" onclick="resetMatch()">🔄</button>
+    <button class="icon-btn" onclick="inviteOnlineFriend()" title="Invite Online Friend">🔗 Link</button>
   </header>
 
   <!-- Game Arena Dashboard -->
@@ -516,7 +577,7 @@
         <span id="status-text">Player 1's Turn</span>
       </div>
 
-      <button class="icon-btn" onclick="toggleAudio()">🔊</button>
+      <button class="icon-btn" onclick="toggleAudio()" style="width: 42px;">🔊</button>
     </div>
 
     <!-- Bottom Player Row -->
@@ -538,12 +599,13 @@
     </div>
   </div>
 
+  <div id="toast">Lobby Link Copied to Clipboard!</div>
+
   <script>
     const canvas = document.getElementById('ludoBoard');
     const ctx = canvas.getContext('2d');
     const sz = 600;
     const center = { x: 300, y: 300 };
-    const hexR = 24; // Hex Radius for tile rendering
 
     // Color definitions
     const C_RED = '#ef4444';
@@ -556,10 +618,20 @@
     let diceVal = 6;
     let hasRolled = false;
     let isRolling = false;
+    let gameFinished = false;
     let audioEnabled = true;
 
     const playerColors = [C_RED, C_GREEN, C_YELLOW, C_BLUE];
     const playerNames = ['Player 1', 'Player 2', 'Player 4', 'Player 3'];
+
+    // Ranking tracking list
+    let finishedRankings = [];
+
+    // PeerJS Online Sync Globals
+    let peer = null;
+    let peerConn = null;
+    let isOnlineMode = false;
+    let myPlayerIndex = 0; // Host is Player 0
 
     const faceRotations = {
       1: { x: 0,   y: 0 },
@@ -571,17 +643,8 @@
     };
 
     // -------------------------------------------------------------
-    // HEXAGONAL GRID COORDINATE TOPOLOGY
+    // HEXAGONAL GRID TOPOLOGY
     // -------------------------------------------------------------
-    // 6 Hexagonal Arm vectors around center
-    const armAngles = [
-      Math.PI * 7 / 6, // Top-Left (Red)
-      Math.PI * 11 / 6, // Top-Right (Green)
-      Math.PI * 1 / 2,  // Bottom-Right (Yellow)
-      Math.PI * 5 / 6,  // Bottom-Left (Blue)
-    ];
-
-    // Generate 48 Main Outer Hex Loop Nodes
     let mainTrack = [];
     let homePaths = [];
     let yardBases = [];
@@ -595,7 +658,6 @@
 
       for (let i = 0; i < numNodes; i++) {
         let angle = (i / numNodes) * Math.PI * 2 - Math.PI / 2;
-        // Wavy hex-polygon distortion for authentic hex-loop feel
         let rMod = radius * (1 + 0.08 * Math.cos(6 * angle));
         mainTrack.push({
           x: center.x + Math.cos(angle) * rMod,
@@ -603,7 +665,6 @@
         });
       }
 
-      // Generate Home Stretches inward towards center
       homePaths = [];
       const startAngles = [-Math.PI * 3 / 4, -Math.PI / 4, Math.PI / 4, Math.PI * 3 / 4];
       for (let p = 0; p < 4; p++) {
@@ -619,7 +680,6 @@
         homePaths.push(path);
       }
 
-      // Yard Bases in Hex Corners
       yardBases = [
         { x: 100, y: 100, color: C_RED },
         { x: 500, y: 100, color: C_GREEN },
@@ -627,7 +687,6 @@
         { x: 100, y: 500, color: C_BLUE }
       ];
 
-      // Safe spot initial states
       safeSpotIndices.forEach((idx, i) => {
         starBlockTypes[i] = (i % 2 === 0) ? 'luck' : 'risk';
       });
@@ -638,11 +697,14 @@
 
     function initPlayers() {
       generateHexBoardTopology();
+      finishedRankings = [];
+      gameFinished = false;
+
       players = [
-        { id: 0, color: C_RED, active: true, startIdx: 0, yard: [{dx:-18,dy:-18},{dx:18,dy:-18},{dx:-18,dy:18},{dx:18,dy:18}], tokens: [-1, -1, -1, -1] },
-        { id: 1, color: C_GREEN, active: activePlayerCount >= 3, startIdx: 12, yard: [{dx:-18,dy:-18},{dx:18,dy:-18},{dx:-18,dy:18},{dx:18,dy:18}], tokens: [-1, -1, -1, -1] },
-        { id: 2, color: C_YELLOW, active: true, startIdx: 24, yard: [{dx:-18,dy:-18},{dx:18,dy:-18},{dx:-18,dy:18},{dx:18,dy:18}], tokens: [-1, -1, -1, -1] },
-        { id: 3, color: C_BLUE, active: activePlayerCount === 4, startIdx: 36, yard: [{dx:-18,dy:-18},{dx:18,dy:-18},{dx:-18,dy:18},{dx:18,dy:18}], tokens: [-1, -1, -1, -1] }
+        { id: 0, color: C_RED, active: true, finished: false, rank: null, startIdx: 0, yard: [{dx:-18,dy:-18},{dx:18,dy:-18},{dx:-18,dy:18},{dx:18,dy:18}], tokens: [-1, -1, -1, -1] },
+        { id: 1, color: C_GREEN, active: activePlayerCount >= 3, finished: false, rank: null, startIdx: 12, yard: [{dx:-18,dy:-18},{dx:18,dy:-18},{dx:-18,dy:18},{dx:18,dy:18}], tokens: [-1, -1, -1, -1] },
+        { id: 2, color: C_YELLOW, active: true, finished: false, rank: null, startIdx: 24, yard: [{dx:-18,dy:-18},{dx:18,dy:-18},{dx:-18,dy:18},{dx:18,dy:18}], tokens: [-1, -1, -1, -1] },
+        { id: 3, color: C_BLUE, active: activePlayerCount === 4, finished: false, rank: null, startIdx: 36, yard: [{dx:-18,dy:-18},{dx:18,dy:-18},{dx:-18,dy:18},{dx:18,dy:18}], tokens: [-1, -1, -1, -1] }
       ];
       if (activePlayerCount === 2) {
         players[1].active = false;
@@ -680,7 +742,7 @@
           gain.gain.setValueAtTime(0.3, ctxA.currentTime);
           gain.gain.linearRampToValueAtTime(0.01, ctxA.currentTime + 0.28);
           osc.start(); osc.stop(ctxA.currentTime + 0.28);
-        } else if (type === 'luck') {
+        } else if (type === 'luck' || type === 'win') {
           osc.type = 'triangle';
           osc.frequency.setValueAtTime(320, ctxA.currentTime);
           osc.frequency.exponentialRampToValueAtTime(880, ctxA.currentTime + 0.35);
@@ -696,6 +758,7 @@
     function startGame(count) {
       activePlayerCount = count;
       document.getElementById('setup-modal').style.display = 'none';
+      document.getElementById('victory-modal').style.display = 'none';
       resetMatch();
     }
 
@@ -706,12 +769,97 @@
       isRolling = false;
       diceVal = 6;
       setCubeFace(6);
+      document.getElementById('victory-modal').style.display = 'none';
       updateUI();
       drawBoard();
     }
 
     // -------------------------------------------------------------
-    // CANVAS DRAWING FUNCTIONS (HEX TILES & PAWNS)
+    // ONLINE MULTIPLAYER (PEERJS)
+    // -------------------------------------------------------------
+    function inviteOnlineFriend() {
+      const roomID = 'ludo-hex-' + Math.random().toString(36).substring(2, 8);
+      const inviteUrl = window.location.origin + window.location.pathname + '?room=' + roomID;
+
+      navigator.clipboard.writeText(inviteUrl).then(() => {
+        showToast('Lobby Link Copied to Clipboard!');
+      });
+
+      initPeer(roomID, true);
+    }
+
+    function initPeer(roomID, isHost) {
+      peer = new Peer(isHost ? roomID : null);
+
+      peer.on('open', (id) => {
+        isOnlineMode = true;
+        if (!isHost) {
+          // Connect to Host
+          peerConn = peer.connect(roomID);
+          myPlayerIndex = 1; // Guest
+          setupConnListeners();
+          showToast('Connected to Host!');
+        } else {
+          showToast('Waiting for opponent to join...');
+        }
+      });
+
+      peer.on('connection', (conn) => {
+        peerConn = conn;
+        setupConnListeners();
+        showToast('Opponent Joined Room!');
+        syncState(); // Host syncs state to guest
+      });
+    }
+
+    function setupConnListeners() {
+      peerConn.on('data', (data) => {
+        if (data.type === 'SYNC_STATE') {
+          players = data.players;
+          turn = data.turn;
+          diceVal = data.diceVal;
+          hasRolled = data.hasRolled;
+          finishedRankings = data.finishedRankings;
+          activePlayerCount = data.activePlayerCount;
+          setCubeFace(diceVal);
+          updateUI();
+          drawBoard();
+        } else if (data.type === 'ROLL_DICE') {
+          rollDiceLogic(false);
+        } else if (data.type === 'MOVE_TOKEN') {
+          moveToken(data.tokenIdx, false);
+        }
+      });
+    }
+
+    function syncState() {
+      if (peerConn && peerConn.open) {
+        peerConn.send({
+          type: 'SYNC_STATE',
+          players, turn, diceVal, hasRolled, finishedRankings, activePlayerCount
+        });
+      }
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.innerText = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2800);
+    }
+
+    // Auto Join from URL params
+    window.addEventListener('load', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const room = urlParams.get('room');
+      if (room) {
+        document.getElementById('setup-modal').style.display = 'none';
+        initPeer(room, false);
+      }
+    });
+
+    // -------------------------------------------------------------
+    // BOARD DRAWING & GRAPHICS
     // -------------------------------------------------------------
     function drawHexagon(x, y, r, fillColor, strokeColor, strokeWidth = 1.5) {
       ctx.beginPath();
@@ -737,26 +885,25 @@
     function drawBoard() {
       ctx.clearRect(0, 0, sz, sz);
 
-      // 1. Draw Outer Hex Ring / Board Grid BG
+      // Outer Hex Frame
       drawHexagon(center.x, center.y, 280, '#090d16', 'rgba(56, 189, 248, 0.25)', 3);
 
-      // 2. Draw Hex Base Yards
+      // Yards
       yardBases.forEach((yb, i) => {
         drawHexagon(yb.x, yb.y, 65, 'rgba(15, 23, 42, 0.95)', yb.color, 3);
-        // Yard Token Pedestals
         players[i].yard.forEach(spot => {
           drawHexagon(yb.x + spot.dx, yb.y + spot.dy, 12, yb.color, '#ffffff', 1);
         });
       });
 
-      // 3. Draw Central Home Hex Hub
+      // Hub Center
       drawHexagon(center.x, center.y, 50, '#0f172a', '#38bdf8', 3);
       ctx.fillStyle = '#38bdf8';
       ctx.font = 'bold 12px system-ui';
       ctx.textAlign = 'center';
       ctx.fillText('HUB', center.x, center.y + 4);
 
-      // 4. Draw Main Outer Track Hex Tiles
+      // Main Outer Track
       mainTrack.forEach((pt, idx) => {
         let safePosIdx = safeSpotIndices.indexOf(idx);
         if (safePosIdx !== -1) {
@@ -773,14 +920,14 @@
         }
       });
 
-      // 5. Draw Home Stretches
+      // Home Stretches
       homePaths.forEach((path, pIdx) => {
         path.forEach(pt => {
           drawHexagon(pt.x, pt.y, 14, playerColors[pIdx], '#ffffff', 1);
         });
       });
 
-      // 6. Draw Pawns
+      // Pawns
       players.forEach(p => {
         if (!p.active) return;
         p.tokens.forEach((tPos, idx) => {
@@ -798,13 +945,9 @@
     }
 
     function draw3DHexPawn(x, y, color) {
-      // Base Hex Shadow
       drawHexagon(x, y + 6, 12, 'rgba(0, 0, 0, 0.5)', null);
-
-      // Hex Body
       drawHexagon(x, y + 2, 11, color, '#ffffff', 1.5);
 
-      // Gloss Head
       let gradHead = ctx.createRadialGradient(x - 2, y - 6, 1, x, y - 4, 7);
       gradHead.addColorStop(0, '#ffffff');
       gradHead.addColorStop(0.4, color);
@@ -830,14 +973,22 @@
     }
 
     // -------------------------------------------------------------
-    // GAME LOGIC & EVENT CONTROLS
+    // GAME LOGIC, RANKING SYSTEM & TURN ENGINE
     // -------------------------------------------------------------
     function userRollDice() {
-      if (hasRolled || isRolling) return;
-      rollDiceLogic();
+      if (gameFinished || hasRolled || isRolling) return;
+      if (isOnlineMode && turn !== myPlayerIndex) {
+        showToast("Wait for opponent's turn!");
+        return;
+      }
+      
+      if (isOnlineMode && peerConn) {
+        peerConn.send({ type: 'ROLL_DICE' });
+      }
+      rollDiceLogic(true);
     }
 
-    function rollDiceLogic() {
+    function rollDiceLogic(isInitiator) {
       hasRolled = true;
       isRolling = true;
       playSound('roll');
@@ -873,14 +1024,16 @@
         document.getElementById('status-text').innerText = 'No Moves Available!';
         setTimeout(nextTurn, 1000);
       } else if (movableTokens.length === 1) {
-        moveToken(movableTokens[0]);
+        moveToken(movableTokens[0], true);
       } else {
         document.getElementById('status-text').innerText = 'Tap Pawn to Move';
       }
     }
 
     canvas.addEventListener('click', (e) => {
-      if (!hasRolled || isRolling) return;
+      if (gameFinished || !hasRolled || isRolling) return;
+      if (isOnlineMode && turn !== myPlayerIndex) return;
+
       const rect = canvas.getBoundingClientRect();
       const clickX = (e.clientX - rect.left) * (sz / rect.width);
       const clickY = (e.clientY - rect.top) * (sz / rect.height);
@@ -900,14 +1053,17 @@
         let dist = Math.hypot(coords.x - clickX, coords.y - clickY);
         if (dist < 20) {
           if ((tPos === -1 && diceVal === 6) || (tPos >= 0 && tPos + diceVal <= 52)) {
-            moveToken(i);
+            if (isOnlineMode && peerConn) {
+              peerConn.send({ type: 'MOVE_TOKEN', tokenIdx: i });
+            }
+            moveToken(i, true);
             break;
           }
         }
       }
     });
 
-    function moveToken(tokenIdx) {
+    function moveToken(tokenIdx, isInitiator) {
       let p = players[turn];
       playSound('move');
 
@@ -959,19 +1115,22 @@
 
       drawBoard();
       updateUI();
+      evaluatePlayerCompletion(p);
 
-      if (diceVal === 6) {
-        hasRolled = false;
-        document.getElementById('status-text').innerText = 'Bonus Roll!';
-      } else {
-        setTimeout(nextTurn, 700);
+      if (!gameFinished) {
+        if (diceVal === 6) {
+          hasRolled = false;
+          document.getElementById('status-text').innerText = 'Bonus Roll!';
+        } else {
+          setTimeout(nextTurn, 700);
+        }
       }
+
+      if (isOnlineMode) syncState();
     }
 
     function handleStarBlockEvent(player, tokenIdx, starIdx) {
       let currentType = starBlockTypes[starIdx] || 'luck';
-
-      // Cycle Hex Star block state for next player
       starBlockTypes[starIdx] = currentType === 'luck' ? 'risk' : 'luck';
 
       let title = "";
@@ -1009,13 +1168,92 @@
       showEventModal(isLuck, title, desc, () => {
         drawBoard();
         updateUI();
-        if (diceVal === 6 || (isLuck && title.includes("Extra Roll"))) {
-          hasRolled = false;
-          document.getElementById('status-text').innerText = 'Bonus Roll!';
-        } else {
-          setTimeout(nextTurn, 500);
+        evaluatePlayerCompletion(player);
+
+        if (!gameFinished) {
+          if (diceVal === 6 || (isLuck && title.includes("Extra Roll"))) {
+            hasRolled = false;
+            document.getElementById('status-text').innerText = 'Bonus Roll!';
+          } else {
+            setTimeout(nextTurn, 500);
+          }
         }
+        if (isOnlineMode) syncState();
       });
+    }
+
+    // -------------------------------------------------------------
+    // WINNER & LOSER RANKING LOGIC
+    // -------------------------------------------------------------
+    function evaluatePlayerCompletion(p) {
+      let finishedTokens = p.tokens.filter(t => t === 52).length;
+      
+      if (finishedTokens === 4 && !p.finished) {
+        p.finished = true;
+        finishedRankings.push(p.id);
+
+        const ordinalNames = ["1st Place (Winner)", "2nd Place", "3rd Place"];
+        p.rank = ordinalNames[finishedRankings.length - 1];
+
+        playSound('win');
+        showToast(`${playerNames[p.id]} Secured ${p.rank}!`);
+
+        // Check Match Ending Conditions
+        if (activePlayerCount === 2 && finishedRankings.length === 1) {
+          // Assign Loser
+          let loser = players.find(pl => pl.active && !pl.finished);
+          if (loser) {
+            loser.finished = true;
+            loser.rank = "2nd Place (Loser)";
+            finishedRankings.push(loser.id);
+          }
+          endGameMatch();
+        } else if (activePlayerCount === 3 && finishedRankings.length === 2) {
+          let loser = players.find(pl => pl.active && !pl.finished);
+          if (loser) {
+            loser.finished = true;
+            loser.rank = "3rd Place (Loser)";
+            finishedRankings.push(loser.id);
+          }
+          endGameMatch();
+        } else if (activePlayerCount === 4 && finishedRankings.length === 3) {
+          let loser = players.find(pl => pl.active && !pl.finished);
+          if (loser) {
+            loser.finished = true;
+            loser.rank = "4th Place (Loser)";
+            finishedRankings.push(loser.id);
+          }
+          endGameMatch();
+        }
+      }
+    }
+
+    function endGameMatch() {
+      gameFinished = true;
+      hasRolled = false;
+
+      const list = document.getElementById('leaderboard-list');
+      list.innerHTML = '';
+
+      finishedRankings.forEach((pId, idx) => {
+        const p = players[pId];
+        const item = document.createElement('div');
+        
+        let rankClass = "first";
+        if (idx === 1) rankClass = "second";
+        if (idx === 2) rankClass = "third";
+        if (idx === activePlayerCount - 1) rankClass = "loser";
+
+        item.className = `rank-item ${rankClass}`;
+        item.innerHTML = `
+          <span>#${idx + 1} ${playerNames[pId]}</span>
+          <span>${p.rank}</span>
+        `;
+        list.appendChild(item);
+      });
+
+      document.getElementById('victory-modal').style.display = 'flex';
+      document.getElementById('status-text').innerText = 'Match Finished!';
     }
 
     function showEventModal(isLuck, title, desc, callback) {
@@ -1051,10 +1289,14 @@
     }
 
     function nextTurn() {
+      if (gameFinished) return;
       hasRolled = false;
+      
+      let safetyCount = 0;
       do {
         turn = (turn + 1) % 4;
-      } while (!players[turn].active);
+        safetyCount++;
+      } while ((!players[turn].active || players[turn].finished) && safetyCount < 10);
 
       updateUI();
       document.getElementById('status-text').innerText = `${playerNames[turn]}'s Turn`;
@@ -1065,11 +1307,14 @@
         let card = document.getElementById(`card-${i}`);
         let score = document.getElementById(`score-${i}`);
 
-        if (i === turn) card.classList.add('active');
+        if (i === turn && !gameFinished) card.classList.add('active');
         else card.classList.remove('active');
 
-        let finished = players[i].tokens.filter(t => t === 52).length;
-        score.innerText = `Home: ${finished}/4`;
+        if (players[i].finished) card.classList.add('finished');
+        else card.classList.remove('finished');
+
+        let finishedCount = players[i].tokens.filter(t => t === 52).length;
+        score.innerHTML = `Home: ${finishedCount}/4 ${players[i].rank ? `<span class="rank-badge">(${players[i].rank})</span>` : ''}`;
       }
       document.getElementById('turn-dot').style.background = playerColors[turn];
     }
